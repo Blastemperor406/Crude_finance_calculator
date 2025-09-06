@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Summation Calculator</title>
+  <style>
+    :root{font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;--bg:#f7fafc;--card:#fff;--muted:#6b7280}
+    body{margin:0;background:var(--bg);color:#111}
+    .container{max-width:980px;margin:36px auto;padding:20px}
+    .card{background:var(--card);border-radius:12px;padding:20px;box-shadow:0 6px 18px rgba(16,24,40,0.06)}
+    label{display:block;font-size:13px;margin:8px 0 4px;color:var(--muted)}
+    input[type=text], input[type=number]{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px;font-size:15px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+    button{background:#0ea5a4;color:white;padding:10px 14px;border-radius:10px;border:0;font-weight:600;cursor:pointer}
+    pre{background:#111827;color:#fff;padding:12px;border-radius:8px;overflow:auto}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border-bottom:1px solid #f3f4f6;text-align:right}
+    th{background:#f9fafb;text-align:left}
+    .muted{color:var(--muted);font-size:13px}
+    .row{display:flex;gap:8px;align-items:center}
+    .small{font-size:13px}
+  </style>
+  <script>
+    function compute() {
+      // read inputs
+      const A = parseFloat(document.getElementById('A').value);
+      const B = parseFloat(document.getElementById('B').value);
+      const r1 = parseFloat(document.getElementById('r1').value);
+      const r2 = parseFloat(document.getElementById('r2').value);
+      const r3 = parseFloat(document.getElementById('r3').value);
+      const i0 = parseInt(document.getElementById('i0').value,10);
+      const iN = parseInt(document.getElementById('iN').value,10);
+      if (Number.isNaN(A)||Number.isNaN(B)||Number.isNaN(r1)||Number.isNaN(r2)||Number.isNaN(r3)){
+        alert('Please enter valid numbers');return;
+      }
+      if (iN < i0) { alert('Upper limit must be >= lower limit'); return; }
+
+      // compute sum and build rows
+      let total = 0;
+      const tbody = document.getElementById('terms');
+      tbody.innerHTML = '';
+      for (let i = i0; i <= iN; i++){
+        const term = (A * Math.pow(r1, i) - B * Math.pow(r2, i)) * Math.pow(r3, iN - i);
+        total += term;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td style="text-align:left">i=${i}</td><td>${term.toFixed(10)}</td>`;
+        tbody.appendChild(tr);
+      }
+      document.getElementById('result').textContent = total.toFixed(12);
+      document.getElementById('resultRounded').textContent = Number(total).toLocaleString(undefined, {maximumFractionDigits:2});
+
+      // show formula latex
+      const latex = `\\sum_{i=${i0}}^{${iN}}\\left[ ${A}(${r1.toFixed(2)})^{i} - ${B}(${r2.toFixed(2)})^{i} \\right](${r3.toFixed(2)})^{${iN}-i}`;
+      document.getElementById('latex').textContent = latex;
+      if (window.MathJax) { MathJax.typesetPromise(); }
+
+      // wolframalpha input
+      const wa = `sum[( ${A}*(${r1})^i - ${B}*(${r2})^i)*(${r3})^(${iN}-i), i=${i0}..${iN}]`;
+      document.getElementById('wa').value = wa;
+    }
+    function copyWA(){ const t = document.getElementById('wa'); t.select(); document.execCommand('copy'); alert('Copied to clipboard'); }
+    window.addEventListener('DOMContentLoaded',()=>{ document.getElementById('go').addEventListener('click',compute); compute(); });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2>Summation calculator</h2>
+      <p class="muted">Evaluates \(\sum_{i=lower}^{upper}\big[ A(r_1)^i - B(r_2)^i\big](r_3)^{upper-i}\)</p>
+
+      <div class="grid" style="margin-top:12px">
+        <div>
+          <label>A (coefficient)</label>
+          <input id="A" type="number" step="any" value="600">
+        </div>
+        <div>
+          <label>B (coefficient)</label>
+          <input id="B" type="number" step="any" value="360">
+        </div>
+        <div>
+          <label>r1 (1+rate1)</label>
+          <input id="r1" type="number" step="any" value="1.10">
+        </div>
+        <div>
+          <label>r2 (1+rate2)</label>
+          <input id="r2" type="number" step="any" value="1.08">
+        </div>
+        <div>
+          <label>r3 (growth factor)</label>
+          <input id="r3" type="number" step="any" value="1.12">
+        </div>
+        <div>
+          <label>lower (i0)</label>
+          <input id="i0" type="number" step="1" value="0">
+        </div>
+        <div>
+          <label>upper (iN)</label>
+          <input id="iN" type="number" step="1" value="19">
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        <button id="go">Compute</button>
+        <div class="small muted">Result (full precision): <code id="result">—</code></div>
+        <div class="small muted">Rounded: <strong id="resultRounded">—</strong></div>
+      </div>
+
+      <div style="margin-top:14px">
+        <div class="muted">LaTeX formula:</div>
+        <pre id="latex"> </pre>
+      </div>
+
+      <div style="margin-top:12px">
+        <label>WolframAlpha input (copy/paste):</label>
+        <div style="display:flex;gap:8px"><input id="wa" type="text" style="flex:1"><button onclick="copyWA()">Copy</button></div>
+      </div>
+
+      <div style="margin-top:18px">
+        <div class="muted">Terms:</div>
+        <table>
+          <thead><tr><th>i</th><th>term value</th></tr></thead>
+          <tbody id="terms"></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
+        <a href="#" onclick="document.getElementById('A').value=600;document.getElementById('B').value=360;document.getElementById('r1').value=1.10;document.getElementById('r2').value=1.08;document.getElementById('r3').value=1.12;document.getElementById('i0').value=0;document.getElementById('iN').value=19;compute();return false;">Reset to your case</a>
+        <a href="https://www.wolframalpha.com/" target="_blank">Open WolframAlpha</a>
+      </div>
+
+      <p class="muted" style="margin-top:14px">To use this page: save it as <code>summation_calculator.html</code> and open in your browser. It works offline.</p>
+    </div>
+  </div>
+</body>
+</html>
