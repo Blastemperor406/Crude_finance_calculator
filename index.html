@@ -25,6 +25,8 @@
   .tab.active{background:#0ea5a4;color:white;}
   .tab-content{display:none;}
   .tab-content.active{display:block;}
+  .formula-big{font-size:26px;text-align:center;margin:12px 0;}
+  .center{text-align:center;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
@@ -38,16 +40,16 @@
   <div class="tab-content active">
     <div class="card">
       <h2>Summation calculator</h2>
-      <p class="muted">Evaluates \(\sum_{i=lower}^{upper}\big[ A(r_1)^i - B(r_2)^i\big](r_3)^{upper-i}\)</p>
+      <p class="muted">Evaluates \(\sum_{i=0}^{n-1}\big[ A(1+r_1)^i - B(1+r_2)^i\big](1+r_3)^{(n-1)-i}\). Here, A is total revenue, B is total expense.</p>
 
       <div class="grid" style="margin-top:12px">
-        <div><label>A (coefficient)</label><input id="A" type="number" step="any" value="600"></div>
-        <div><label>B (coefficient)</label><input id="B" type="number" step="any" value="360"></div>
-        <div><label>r1 (1+rate1)</label><input id="r1" type="number" step="any" value="1.10"></div>
-        <div><label>r2 (1+rate2)</label><input id="r2" type="number" step="any" value="1.08"></div>
-        <div><label>r3 (growth factor)</label><input id="r3" type="number" step="any" value="1.12"></div>
-        <div><label>lower (i0)</label><input id="i0" type="number" step="1" value="0"></div>
-        <div><label>upper (iN)</label><input id="iN" type="number" step="1" value="19"></div>
+        <div><label>A (total revenue)</label><input id="A" type="number" step="any" value="600"></div>
+        <div><label>B (total expense)</label><input id="B" type="number" step="any" value="360"></div>
+        <div><label>r1 (% revenue growth)</label><input id="r1" type="number" step="any" value="10"></div>
+        <div><label>r2 (% expense growth)</label><input id="r2" type="number" step="any" value="8"></div>
+        <div><label>r3 (% savings return)</label><input id="r3" type="number" step="any" value="12"></div>
+        <div><label>n (years)</label><input id="nYears" type="number" step="1" value="20"></div>
+        <div><label>Currency</label><input id="currency" type="text" value="₹"></div>
       </div>
 
       <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
@@ -84,23 +86,32 @@
   <div class="tab-content">
     <div class="card">
       <h1>How the Summation Calculator Works</h1>
-      <p>This calculator evaluates the sum:</p>
-      <p class="muted">\(\displaystyle \sum_{i=i_0}^{i_N} \big[ A (r_1)^i - B (r_2)^i \big] (r_3)^{i_N-i} \)</p>
+      <p class="center">This calculator evaluates the sum</p>
+      <p class="formula-big">\(\displaystyle \sum_{i=0}^{n-1} \big[ A\,(1+r_1)^i - B\,(1+r_2)^i \big] (1+r_3)^{(n-1)-i} \)</p>
+
+      <h2>Your explanation</h2>
+      <div id="your-explanation" class="card" style="background:#f9fafb">The formula is a generalization to estimate the total return on net growing annuity for a given number of years. </div>
 
       <h2>Step-by-Step Explanation</h2>
       <ol>
-        <li><strong>Input coefficients:</strong> <code>A</code> and <code>B</code> multiply the powers of <code>r1</code> and <code>r2</code>.</li>
-        <li><strong>Exponential growth:</strong> Each term is scaled by <code>r1^i</code> and <code>r2^i</code> to model compounding effects.</li>
-        <li><strong>Weighting factor:</strong> The difference of the powers is multiplied by <code>r3^(iN - i)</code> to adjust terms depending on their position in the sum.</li>
-        <li><strong>Summation:</strong> All terms from <code>i = i0</code> to <code>i = iN</code> are added to get the total.</li>
+        <li><strong>Totals:</strong> <code>A</code> is total revenue for year 0; <code>B</code> is total expense for year 0.</li>
+        <li><strong>Rates (percent inputs):</strong> Enter <code>r1</code>, <code>r2</code>, <code>r3</code> as percentages. The formula uses <code>(1+r)</code> where internally we convert rates by dividing by 100.</li>
+        <li><strong>Growth:</strong> Revenue grows by <code>(1+r1)^i</code>; expenses grow by <code>(1+r2)^i</code>.</li>
+        <li><strong>Reinvestment/returns factor:</strong> Each year's net amount is scaled by <code>(1+r3)^{(n-1)-i}</code> to bring it to the end of year <code>n</code>.</li>
+        <li><strong>Summation:</strong> We sum from <code>i=0</code> to <code>i=n-1</code>. The lower bound is fixed at 0.</li>
       </ol>
 
       <h2>Quick Tips</h2>
       <ul>
-        <li>Ensure <code>iN ≥ i0</code>.</li>
-        <li>Decimal inputs are allowed for coefficients and rates.</li>
+        <li>Use <code>n</code> as the number of years.</li>
+        <li>Inputs for <code>r1</code>, <code>r2</code>, <code>r3</code> are in percent.</li>
         <li>You can copy the WolframAlpha input to verify the sum analytically.</li>
       </ul>
+
+
+      <div class="muted" style="margin-top:12px">
+        r1 is the rate at which revenue is expected to grow, r2 is the rate at which expenses are expected to grow (e.g., inflation), r3 is the rate of returns on savings, and n is the number of years (lowercase).
+      </div>
 
       <p class="muted" style="margin-top:24px; text-align:center;">Shoutout to 🍯 for the help with the math!</p>
     </div>
@@ -118,30 +129,42 @@
   function compute() {
     const A=parseFloat(document.getElementById('A').value);
     const B=parseFloat(document.getElementById('B').value);
-    const r1=parseFloat(document.getElementById('r1').value);
-    const r2=parseFloat(document.getElementById('r2').value);
-    const r3=parseFloat(document.getElementById('r3').value);
-    const i0=parseInt(document.getElementById('i0').value,10);
-    const iN=parseInt(document.getElementById('iN').value,10);
-    if([A,B,r1,r2,r3].some(isNaN)){alert('Please enter valid numbers');return;}
-    if(iN<i0){alert('Upper limit must be >= lower limit');return;}
+    const r1Pct=parseFloat(document.getElementById('r1').value);
+    const r2Pct=parseFloat(document.getElementById('r2').value);
+    const r3Pct=parseFloat(document.getElementById('r3').value);
+    const nYears=parseInt(document.getElementById('nYears').value,10);
+    const currency=document.getElementById('currency').value || '';
+    if([A,B,r1Pct,r2Pct,r3Pct,nYears].some(isNaN)){alert('Please enter valid numbers');return;}
+    if(nYears<1){alert('n must be at least 1');return;}
+    const r1=r1Pct/100, r2=r2Pct/100, r3=r3Pct/100;
+    const i0=0;
+    const iN=nYears-1;
     let total=0;
     const tbody=document.getElementById('terms'); tbody.innerHTML='';
     for(let i=i0;i<=iN;i++){
-      const term=(A*Math.pow(r1,i)-B*Math.pow(r2,i))*Math.pow(r3,iN-i);
+      const term=(A*Math.pow(1+r1,i)-B*Math.pow(1+r2,i))*Math.pow(1+r3,iN-i);
       total+=term;
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td style="text-align:left">i=${i}</td><td>${term.toFixed(10)}</td>`;
+      tr.innerHTML=`<td style=\"text-align:left\">i=${i}</td><td>${currency} ${term.toFixed(2)}</td>`;
       tbody.appendChild(tr);
     }
     document.getElementById('result').textContent=total.toFixed(12);
-    document.getElementById('resultRounded').textContent=Number(total).toLocaleString(undefined,{maximumFractionDigits:2});
-    document.getElementById('latex').textContent=`\\sum_{i=${i0}}^{${iN}}\\left[ ${A}(${r1.toFixed(2)})^{i} - ${B}(${r2.toFixed(2)})^{i} \\right](${r3.toFixed(2)})^{${iN}-i}`;
+    document.getElementById('resultRounded').textContent=`${currency} ${Number(total).toLocaleString(undefined,{maximumFractionDigits:2})}`;
+    document.getElementById('latex').textContent=`\\sum_{i=${i0}}^{${iN}}\\left[ ${A}(1+${r1.toFixed(4)})^{i} - ${B}(1+${r2.toFixed(4)})^{i} \\right](1+${r3.toFixed(4)})^{${iN}-i}`;
     if(window.MathJax){MathJax.typesetPromise();}
-    document.getElementById('wa').value=`sum[( ${A}*(${r1})^i - ${B}*(${r2})^i)*(${r3})^(${iN}-i), i=${i0}..${iN}]`;
+    document.getElementById('wa').value=`sum[( ${A}*(1+(${r1Pct}/100))^i - ${B}*(1+(${r2Pct}/100))^i)*(1+(${r3Pct}/100))^(${iN}-i), i=${i0}..${iN}]`;
   }
   function copyWA(){const t=document.getElementById('wa');t.select();document.execCommand('copy');alert('Copied to clipboard');}
-  function resetDefaults(){document.getElementById('A').value=600;document.getElementById('B').value=360;document.getElementById('r1').value=1.10;document.getElementById('r2').value=1.08;document.getElementById('r3').value=1.12;document.getElementById('i0').value=0;document.getElementById('iN').value=19;compute();}
+  function resetDefaults(){
+    document.getElementById('A').value=600;
+    document.getElementById('B').value=360;
+    document.getElementById('r1').value=10;
+    document.getElementById('r2').value=8;
+    document.getElementById('r3').value=12;
+    document.getElementById('nYears').value=20;
+    document.getElementById('currency').value='₹';
+    compute();
+  }
   window.addEventListener('DOMContentLoaded',()=>{document.getElementById('go').addEventListener('click',compute);compute();});
 </script>
 </body>
