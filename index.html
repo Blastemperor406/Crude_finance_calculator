@@ -43,8 +43,8 @@
       <p class="muted">Evaluates \(\sum_{i=0}^{n-1}\big[ A(1+r_1)^i - B(1+r_2)^i\big](1+r_3)^{(n-1)-i}\). Here, A is total revenue, B is total expense.</p>
 
       <div class="grid" style="margin-top:12px">
-        <div><label>A (total revenue)</label><input id="A" type="number" step="any" value="600"></div>
-        <div><label>B (total expense)</label><input id="B" type="number" step="any" value="360"></div>
+        <div><label>A (total revenue)</label><input id="A" type="text" value="600" oninput="formatNumber(this)"></div>
+        <div><label>B (total expense)</label><input id="B" type="text" value="360" oninput="formatNumber(this)"></div>
         <div><label>r1 (% revenue growth)</label><input id="r1" type="number" step="any" value="10"></div>
         <div><label>r2 (% expense growth)</label><input id="r2" type="number" step="any" value="8"></div>
         <div><label>r3 (% savings return)</label><input id="r3" type="number" step="any" value="12"></div>
@@ -125,47 +125,71 @@
     document.querySelectorAll('.tab-content').forEach((c,i)=>c.classList.toggle('active',i===index));
   }
 
+  // Number formatting functions
+  function formatNumber(input) {
+    // Remove all non-numeric characters except decimal point
+    let value = input.value.replace(/[^\d.]/g, '');
+    
+    // Handle multiple decimal points
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    
+    // Add commas for thousands
+    if (parts[0]) {
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      value = parts.join('.');
+    }
+    
+    input.value = value;
+  }
+
+  function parseNumber(str) {
+    return parseFloat(str.replace(/,/g, '')) || 0;
+  }
+
   // Calculator functions
   function compute() {
-    const A=parseFloat(document.getElementById('A').value);
-    const B=parseFloat(document.getElementById('B').value);
-    const r1Pct=parseFloat(document.getElementById('r1').value);
-    const r2Pct=parseFloat(document.getElementById('r2').value);
-    const r3Pct=parseFloat(document.getElementById('r3').value);
-    const nYears=parseInt(document.getElementById('nYears').value,10);
-    const currency=document.getElementById('currency').value || '';
-    if([A,B,r1Pct,r2Pct,r3Pct,nYears].some(isNaN)){alert('Please enter valid numbers');return;}
-    if(nYears<1){alert('n must be at least 1');return;}
-    const r1=r1Pct/100, r2=r2Pct/100, r3=r3Pct/100;
-    const i0=0;
-    const iN=nYears-1;
-    let total=0;
-    const tbody=document.getElementById('terms'); tbody.innerHTML='';
-    for(let i=i0;i<=iN;i++){
-      const term=(A*Math.pow(1+r1,i)-B*Math.pow(1+r2,i))*Math.pow(1+r3,iN-i);
-      total+=term;
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td style=\"text-align:left\">i=${i}</td><td>${currency} ${term.toFixed(2)}</td>`;
+    const A = parseNumber(document.getElementById('A').value);
+    const B = parseNumber(document.getElementById('B').value);
+    const r1Pct = parseFloat(document.getElementById('r1').value);
+    const r2Pct = parseFloat(document.getElementById('r2').value);
+    const r3Pct = parseFloat(document.getElementById('r3').value);
+    const nYears = parseInt(document.getElementById('nYears').value, 10);
+    const currency = document.getElementById('currency').value || '';
+    if ([A, B, r1Pct, r2Pct, r3Pct, nYears].some(isNaN)) { alert('Please enter valid numbers'); return; }
+    if (nYears < 1) { alert('n must be at least 1'); return; }
+    const r1 = r1Pct / 100, r2 = r2Pct / 100, r3 = r3Pct / 100;
+    const i0 = 0;
+    const iN = nYears - 1;
+    let total = 0;
+    const tbody = document.getElementById('terms'); tbody.innerHTML = '';
+    for (let i = i0; i <= iN; i++) {
+      const term = (A * Math.pow(1 + r1, i) - B * Math.pow(1 + r2, i)) * Math.pow(1 + r3, iN - i);
+      total += term;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td style="text-align:left">i=${i}</td><td>${currency} ${term.toFixed(2)}</td>`;
       tbody.appendChild(tr);
     }
-    document.getElementById('result').textContent=total.toFixed(12);
-    document.getElementById('resultRounded').textContent=`${currency} ${Number(total).toLocaleString(undefined,{maximumFractionDigits:2})}`;
-    document.getElementById('latex').textContent=`\\sum_{i=${i0}}^{${iN}}\\left[ ${A}(1+${r1.toFixed(4)})^{i} - ${B}(1+${r2.toFixed(4)})^{i} \\right](1+${r3.toFixed(4)})^{${iN}-i}`;
-    if(window.MathJax){MathJax.typesetPromise();}
-    document.getElementById('wa').value=`sum[( ${A}*(1+(${r1Pct}/100))^i - ${B}*(1+(${r2Pct}/100))^i)*(1+(${r3Pct}/100))^(${iN}-i), i=${i0}..${iN}]`;
+    document.getElementById('result').textContent = total.toFixed(12);
+    document.getElementById('resultRounded').textContent = `${currency} ${Number(total).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    document.getElementById('latex').textContent = `\\sum_{i=${i0}}^{${iN}}\\left[ ${A}(1+${r1.toFixed(4)})^{i} - ${B}(1+${r2.toFixed(4)})^{i} \\right](1+${r3.toFixed(4)})^{${iN}-i}`;
+    if (window.MathJax) { MathJax.typesetPromise(); }
+    document.getElementById('wa').value = `sum[( ${A}*(1+(${r1Pct}/100))^i - ${B}*(1+(${r2Pct}/100))^i)*(1+(${r3Pct}/100))^(${iN}-i), i=${i0}..${iN}]`;
   }
-  function copyWA(){const t=document.getElementById('wa');t.select();document.execCommand('copy');alert('Copied to clipboard');}
-  function resetDefaults(){
-    document.getElementById('A').value=600;
-    document.getElementById('B').value=360;
-    document.getElementById('r1').value=10;
-    document.getElementById('r2').value=8;
-    document.getElementById('r3').value=12;
-    document.getElementById('nYears').value=20;
-    document.getElementById('currency').value='₹';
+  function copyWA() { const t = document.getElementById('wa'); t.select(); document.execCommand('copy'); alert('Copied to clipboard'); }
+  function resetDefaults() {
+    document.getElementById('A').value = '600';
+    document.getElementById('B').value = '360';
+    document.getElementById('r1').value = 10;
+    document.getElementById('r2').value = 8;
+    document.getElementById('r3').value = 12;
+    document.getElementById('nYears').value = 20;
+    document.getElementById('currency').value = '₹';
     compute();
   }
-  window.addEventListener('DOMContentLoaded',()=>{document.getElementById('go').addEventListener('click',compute);compute();});
+  window.addEventListener('DOMContentLoaded', () => { document.getElementById('go').addEventListener('click', compute); compute(); });
 </script>
 </body>
 </html>
